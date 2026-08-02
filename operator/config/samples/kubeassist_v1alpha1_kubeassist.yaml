@@ -1,0 +1,48 @@
+apiVersion: kubeassist.github.io/v1alpha1
+kind: KubeAssist
+metadata:
+  name: my-agent
+  namespace: kubeassist
+spec:
+  # -- Required: point to a Secret containing your LLM API key --
+  apiKeySecretRef:
+    name: my-llm-api-key
+    key: API_KEY          # change to OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.
+
+  # -- Agent container image (bring your own or use the default) --
+  image: ghcr.io/kubeassist-operator/agent:latest
+
+  # -- Agent operating mode (passed as AGENT_MODE env var) --
+  mode: default
+
+  # -- Scaling --
+  replicas: 1
+
+  # -- Ephemeral workspace volume size --
+  workspaceSize: 5Gi
+
+  # -- Resource requests and limits --
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+  # -- Namespaces the agent is allowed to deploy workloads into --
+  targetNamespaces:
+    - kubeassist
+
+  # -- Ingress: set enabled: true on vanilla Kubernetes --
+  # -- Leave enabled: false on OpenShift (a Route is created automatically) --
+  ingress:
+    enabled: false
+    # host: my-agent.example.com
+    # ingressClassName: nginx
+    # tlsSecretName: my-agent-tls
+    # annotations:
+    #   nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+
+  # -- OpenShift Route timeout (ignored on vanilla k8s) --
+  routeTimeout: 600s

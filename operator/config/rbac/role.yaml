@@ -1,0 +1,38 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups: [""]
+  resources: [configmaps, serviceaccounts, services, secrets]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [apps]
+  resources: [deployments]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [kubeassist.github.io]
+  resources: [kubeassists]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [kubeassist.github.io]
+  resources: [kubeassists/finalizers]
+  verbs: [update]
+- apiGroups: [kubeassist.github.io]
+  resources: [kubeassists/status]
+  verbs: [get, patch, update]
+- apiGroups: [networking.k8s.io]
+  resources: [ingresses]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [rbac.authorization.k8s.io]
+  resources: [clusterrolebindings, rolebindings]
+  verbs: [bind, create, delete, escalate, get, list, patch, update, watch]
+- apiGroups: [rbac.authorization.k8s.io]
+  resources: [clusterroles, roles]
+  verbs: [bind, create, delete, escalate, get, list, patch, update, watch]
+# OpenShift Route support (optional — no-op on vanilla k8s)
+- apiGroups: [route.openshift.io]
+  resources: [routes]
+  verbs: [create, delete, get, list, patch, update, watch]
+# OpenShift cluster domain detection (optional)
+- apiGroups: [config.openshift.io]
+  resources: [ingresses]
+  verbs: [get, list, watch]

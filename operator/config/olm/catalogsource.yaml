@@ -1,0 +1,14 @@
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: kubeassist-operator-catalog
+  namespace: olm
+spec:
+  sourceType: grpc
+  image: ghcr.io/kubeassist-operator/catalog:v0.1.0
+  displayName: KubeAssist Operator Catalog
+  publisher: KubeAssist Community
+  updateStrategy:
+    registryPoll:
+      interval: 60m

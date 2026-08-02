@@ -1,0 +1,9 @@
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: kubeassist-operator-group
+  namespace: kubeassist-operator-system
+spec:
+  targetNamespaces:
+  - kubeassist-operator-system

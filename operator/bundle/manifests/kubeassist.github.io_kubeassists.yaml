@@ -1,0 +1,215 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: kubeassists.kubeassist.github.io
+spec:
+  group: kubeassist.github.io
+  names:
+    categories:
+    - kubeassist
+    kind: KubeAssist
+    listKind: KubeAssistList
+    plural: kubeassists
+    shortNames:
+    - ka
+    singular: kubeassist
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Lifecycle phase
+      jsonPath: .status.phase
+      name: Phase
+      type: string
+    - description: Public endpoint
+      jsonPath: .status.url
+      name: URL
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: KubeAssist is the Schema for the kubeassists API.
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: KubeAssistSpec defines the desired state of a KubeAssist agent instance.
+            properties:
+              apiKeySecretRef:
+                description: |-
+                  ApiKeySecretRef points to the Secret that holds the LLM / AI provider API key.
+                  Works with any OpenAI-compatible provider: OpenAI, watsonx, Anthropic, etc.
+                properties:
+                  key:
+                    default: API_KEY
+                    description: |-
+                      Key is the data key inside the Secret whose value is injected into the
+                      agent container as its LLM API key environment variable.
+                      Defaults to "API_KEY" — compatible with any OpenAI-compatible provider.
+                    type: string
+                  name:
+                    description: Name is the name of the Secret in the same namespace as the KubeAssist CR.
+                    type: string
+                required:
+                - name
+                type: object
+              image:
+                default: ghcr.io/kubeassist-operator/agent:latest
+                description: Image is the fully-qualified container image for the agent runtime.
+                type: string
+              imagePullSecretName:
+                description: ImagePullSecretName is the name of a pull Secret for private registries.
+                type: string
+              ingress:
+                description: |-
+                  Ingress configures a standard Kubernetes Ingress for the agent endpoint.
+                  Required on vanilla Kubernetes. Optional on OpenShift (Route is created by default).
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations are added verbatim to the Ingress resource.
+                    type: object
+                  enabled:
+                    description: Enabled controls whether an Ingress resource is created.
+                    type: boolean
+                  host:
+                    description: 'Host is the fully-qualified hostname. Example: "my-agent.example.com"'
+                    type: string
+                  ingressClassName:
+                    description: 'IngressClassName is the IngressClass to use (e.g. "nginx", "traefik").'
+                    type: string
+                  tlsSecretName:
+                    description: TLSSecretName is the name of a TLS Secret for HTTPS termination.
+                    type: string
+                type: object
+              mode:
+                default: default
+                description: Mode is passed as AGENT_MODE to the agent container.
+                type: string
+              replicas:
+                default: 1
+                description: Replicas is the desired number of agent Pods.
+                format: int32
+                minimum: 0
+                type: integer
+              resources:
+                description: Resources defines CPU/memory requests and limits.
+                properties:
+                  limits:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    type: object
+                  requests:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    type: object
+                type: object
+              routeTimeout:
+                default: 600s
+                description: RouteTimeout is the haproxy timeout annotation for OpenShift Routes.
+                type: string
+              targetNamespaces:
+                description: TargetNamespaces lists namespaces where the agent is granted edit RBAC.
+                items:
+                  type: string
+                type: array
+              workspaceSize:
+                default: 5Gi
+                description: WorkspaceSize is the size of the ephemeral workspace volume at /workspace.
+                type: string
+            required:
+            - apiKeySecretRef
+            type: object
+          status:
+            description: KubeAssistStatus defines the observed state of a KubeAssist instance.
+            properties:
+              activeJobs:
+                description: ActiveJobs is the number of agent sessions currently running.
+                format: int32
+                type: integer
+              agentVersion:
+                description: AgentVersion is the version string reported by the running agent image.
+                type: string
+              conditions:
+                description: Conditions is the list of standard Kubernetes status conditions.
+                items:
+                  description: Condition contains details for one aspect of the current state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: ObservedGeneration is the metadata.generation last successfully reconciled.
+                format: int64
+                type: integer
+              phase:
+                description: 'Phase is the high-level lifecycle state: Pending, Running, or Failed.'
+                enum:
+                - Pending
+                - Running
+                - Failed
+                type: string
+              totalJobsRun:
+                description: TotalJobsRun is the cumulative count of completed agent sessions.
+                format: int64
+                type: integer
+              url:
+                description: URL is the public HTTPS endpoint of the agent.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

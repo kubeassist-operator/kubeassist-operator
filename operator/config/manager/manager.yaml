@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeassist-operator-controller-manager
+  namespace: kubeassist-operator-system
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: kubeassist-operator
+    app.kubernetes.io/managed-by: kubeassist-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+    spec:
+      serviceAccountName: kubeassist-operator-controller-manager
+      containers:
+      - name: manager
+        image: ghcr.io/kubeassist-operator/controller:v0.1.0
+        command: [/manager]
+        args: [--leader-elect]
+        ports:
+        - containerPort: 8081
+          name: health
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 10

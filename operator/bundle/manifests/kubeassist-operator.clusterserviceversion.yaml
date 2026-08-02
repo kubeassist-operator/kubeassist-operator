@@ -1,0 +1,296 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: kubeassist-operator.v0.1.0
+  namespace: placeholder
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "kubeassist.github.io/v1alpha1",
+          "kind": "KubeAssist",
+          "metadata": {
+            "name": "my-agent",
+            "namespace": "kubeassist"
+          },
+          "spec": {
+            "apiKeySecretRef": {
+              "name": "my-llm-api-key",
+              "key": "API_KEY"
+            },
+            "image": "ghcr.io/kubeassist-operator/agent:latest",
+            "mode": "default",
+            "replicas": 1,
+            "workspaceSize": "5Gi",
+            "targetNamespaces": ["kubeassist"],
+            "resources": {
+              "requests": {"cpu": "500m", "memory": "1Gi"},
+              "limits": {"cpu": "2", "memory": "4Gi"}
+            },
+            "ingress": {
+              "enabled": false
+            }
+          }
+        }
+      ]
+    capabilities: Basic Install
+    categories: AI/Machine Learning, Developer Tools
+    description: >-
+      Deploy and manage autonomous AI agents on any Kubernetes cluster.
+      Works with any OpenAI-compatible LLM provider: OpenAI, watsonx, Anthropic,
+      Mistral, and more. Each KubeAssist CR provisions a fully isolated agent
+      with cluster RBAC, persistent workspace, health probes, and an HTTP endpoint.
+    containerImage: ghcr.io/kubeassist-operator/controller:v0.1.0
+    repository: https://github.com/kubeassist-operator/kubeassist-operator
+    support: KubeAssist Community
+    createdAt: "2025-01-01T00:00:00Z"
+spec:
+  displayName: KubeAssist Operator
+  description: |
+    ## Overview
+
+    The **KubeAssist Operator** deploys and manages autonomous AI agent instances
+    on any Kubernetes cluster. Each `KubeAssist` custom resource provisions a
+    fully-isolated agent pod with:
+
+    - **Bring-your-own LLM** — works with any OpenAI-compatible API (OpenAI,
+      IBM watsonx, Anthropic Claude, Mistral, Llama via Ollama, etc.)
+    - **Configurable API key injection** — point to any Secret key name via
+      `spec.apiKeySecretRef.key` (default: `API_KEY`)
+    - **Standard Kubernetes Ingress** support for vanilla k8s clusters
+    - **OpenShift Route** support with automatic TLS termination
+    - **Scoped RBAC** — the agent ServiceAccount is granted edit access only
+      to the namespaces you specify in `spec.targetNamespaces`
+    - **Health probes, resource limits, and ephemeral workspace volume** included
+
+    ## Getting Started
+
+    1. Create the API key Secret:
+       ```bash
+       kubectl create secret generic my-llm-key \
+         --from-literal=API_KEY=sk-... \
+         -n kubeassist
+       ```
+
+    2. Apply a KubeAssist CR:
+       ```yaml
+       apiVersion: kubeassist.github.io/v1alpha1
+       kind: KubeAssist
+       metadata:
+         name: my-agent
+         namespace: kubeassist
+       spec:
+         apiKeySecretRef:
+           name: my-llm-key
+           key: API_KEY
+         image: ghcr.io/kubeassist-operator/agent:latest
+         ingress:
+           enabled: true
+           host: my-agent.example.com
+           ingressClassName: nginx
+       ```
+
+    3. Check status:
+       ```bash
+       kubectl get kubeassist my-agent -n kubeassist
+       ```
+
+    ## Documentation
+
+    Full documentation: https://github.com/kubeassist-operator/kubeassist-operator
+
+  version: 0.1.0
+  maturity: alpha
+  maintainers:
+  - name: Rudraprakash R
+    email: rudraprakash.r@gmail.com
+  provider:
+    name: KubeAssist Community
+    url: https://github.com/kubeassist-operator
+  keywords:
+  - ai
+  - agent
+  - llm
+  - kubernetes
+  - automation
+  - openai
+  - watsonx
+  - langchain
+  links:
+  - name: Source Code
+    url: https://github.com/kubeassist-operator/kubeassist-operator
+  - name: Documentation
+    url: https://github.com/kubeassist-operator/kubeassist-operator/blob/main/README.md
+  icon:
+  - base64data: ""
+    mediatype: image/svg+xml
+  installModes:
+  - type: OwnNamespace
+    supported: true
+  - type: SingleNamespace
+    supported: true
+  - type: MultiNamespace
+    supported: true
+  - type: AllNamespaces
+    supported: true
+  install:
+    strategy: deployment
+    spec:
+      permissions:
+      - serviceAccountName: kubeassist-operator-controller-manager
+        rules:
+        - apiGroups: [coordination.k8s.io]
+          resources: [leases]
+          verbs: [get, list, watch, create, update, patch, delete]
+        - apiGroups: [""]
+          resources: [events]
+          verbs: [create, patch]
+      clusterPermissions:
+      - serviceAccountName: kubeassist-operator-controller-manager
+        rules:
+        - apiGroups: [kubeassist.github.io]
+          resources: [kubeassists]
+          verbs: [get, list, watch, create, update, patch, delete]
+        - apiGroups: [kubeassist.github.io]
+          resources: [kubeassists/status]
+          verbs: [get, update, patch]
+        - apiGroups: [kubeassist.github.io]
+          resources: [kubeassists/finalizers]
+          verbs: [update]
+        - apiGroups: [apps]
+          resources: [deployments]
+          verbs: [get, list, watch, create, update, patch, delete]
+        - apiGroups: [""]
+          resources: [services, serviceaccounts, configmaps, secrets]
+          verbs: [get, list, watch, create, update, patch, delete]
+        - apiGroups: [networking.k8s.io]
+          resources: [ingresses]
+          verbs: [get, list, watch, create, update, patch, delete]
+        - apiGroups: [rbac.authorization.k8s.io]
+          resources: [clusterrolebindings, rolebindings]
+          verbs: [get, list, watch, create, update, patch, delete, bind, escalate]
+        - apiGroups: [rbac.authorization.k8s.io]
+          resources: [clusterroles, roles]
+          verbs: [get, list, watch, create, update, patch, delete, bind, escalate]
+        - apiGroups: [route.openshift.io]
+          resources: [routes]
+          verbs: [get, list, watch, create, update, patch, delete]
+        - apiGroups: [config.openshift.io]
+          resources: [ingresses]
+          verbs: [get, list, watch]
+        - apiGroups: [authentication.k8s.io]
+          resources: [tokenreviews]
+          verbs: [create]
+        - apiGroups: [authorization.k8s.io]
+          resources: [subjectaccessreviews]
+          verbs: [create]
+      deployments:
+      - name: kubeassist-operator-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              control-plane: controller-manager
+          template:
+            metadata:
+              labels:
+                control-plane: controller-manager
+            spec:
+              serviceAccountName: kubeassist-operator-controller-manager
+              containers:
+              - name: manager
+                image: ghcr.io/kubeassist-operator/controller:v0.1.0
+                command: [/manager]
+                args: [--leader-elect]
+                ports:
+                - containerPort: 8081
+                  name: health
+                - containerPort: 8443
+                  name: https
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 128Mi
+                  limits:
+                    cpu: 500m
+                    memory: 256Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
+              terminationGracePeriodSeconds: 10
+  customresourcedefinitions:
+    owned:
+    - name: kubeassists.kubeassist.github.io
+      version: v1alpha1
+      kind: KubeAssist
+      displayName: KubeAssist Agent
+      description: An autonomous AI agent instance on Kubernetes.
+      resources:
+      - kind: Deployment
+        version: v1
+      - kind: Service
+        version: v1
+      - kind: Ingress
+        version: v1
+      - kind: ConfigMap
+        version: v1
+      - kind: ServiceAccount
+        version: v1
+      specDescriptors:
+      - path: apiKeySecretRef.name
+        displayName: API Key Secret Name
+        description: Name of the Secret containing the LLM API key
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes:Secret
+      - path: apiKeySecretRef.key
+        displayName: API Key Secret Key
+        description: Data key inside the Secret (default: API_KEY)
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - path: image
+        displayName: Agent Image
+        description: Container image for the agent runtime
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - path: replicas
+        displayName: Replicas
+        description: Number of agent pods
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:podCount
+      - path: ingress.enabled
+        displayName: Enable Ingress
+        description: Create a standard Kubernetes Ingress (required on vanilla k8s)
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - path: ingress.host
+        displayName: Ingress Host
+        description: Hostname for the Ingress rule
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      statusDescriptors:
+      - path: phase
+        displayName: Phase
+        description: Current lifecycle phase
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.phase
+      - path: url
+        displayName: Agent URL
+        description: Public endpoint for the agent
+        x-descriptors:
+        - urn:alm:descriptor:org.w3:link
