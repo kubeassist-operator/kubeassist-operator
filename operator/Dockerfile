@@ -1,13 +1,14 @@
 # Stage 1 — build the Go binary
-FROM golang:1.22 AS builder
+FROM golang:1.23 AS builder
 
 WORKDIR /workspace
 
 # Copy go.mod first for layer caching
 COPY go.mod go.mod
 
-# Download dependencies
-RUN go mod download
+# Tidy and download — regenerates go.sum inside the build container
+# so the host go.sum does not need to be kept in sync manually.
+RUN go mod tidy && go mod download
 
 # Copy source
 COPY cmd/ cmd/
@@ -15,8 +16,8 @@ COPY api/ api/
 COPY internal/ internal/
 COPY hack/ hack/
 
-# Build — statically linked, no CGO, for linux/amd64
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+# Build — statically linked, no CGO
+RUN CGO_ENABLED=0 GOOS=linux \
     go build -a -ldflags="-s -w" -o manager ./cmd/
 
 # Stage 2 — minimal runtime image
