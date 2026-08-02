@@ -3,18 +3,15 @@ FROM golang:1.23 AS builder
 
 WORKDIR /workspace
 
-# Copy go.mod first for layer caching
+# Copy everything first so 'go mod tidy' can see all imports
 COPY go.mod go.mod
-
-# Tidy and download — regenerates go.sum inside the build container
-# so the host go.sum does not need to be kept in sync manually.
-RUN go mod tidy && go mod download
-
-# Copy source
 COPY cmd/ cmd/
 COPY api/ api/
 COPY internal/ internal/
 COPY hack/ hack/
+
+# Tidy resolves all imports and writes go.sum, then download fetches them
+RUN go mod tidy && go mod download
 
 # Build — statically linked, no CGO
 RUN CGO_ENABLED=0 GOOS=linux \
