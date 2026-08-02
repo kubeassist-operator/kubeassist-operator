@@ -1,0 +1,9 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+ name: kubeassist-events-role
+ namespace: kubeassist-operator-system
+rules:
+- apiGroups: [""]
+ resources: ["events"]
+ verbs: ["create", "patch"]
